@@ -10,11 +10,10 @@ import 'package:ridewell/homescreen/two.dart';
 import 'package:geolocator/geolocator.dart';
 
 class Home extends StatefulWidget {
-   final double? latitude; // Nullable latitude
-  final double? longitude; // Nullable longitude
+  final double? latitude;
+  final double? longitude;
 
-  const Home({Key? key, this.latitude, this.longitude}) : super(key: key);
-
+  const Home({super.key, this.latitude, this.longitude});
 
   @override
   State<Home> createState() => _HomeState();
@@ -24,12 +23,21 @@ class _HomeState extends State<Home> {
   int _selectedIndex = 0;
 
   // List of screens to switch between
-  static const List<Widget> _screens = [
-    MapScreen(), // Displaying the map screen here
-    One(), // Placeholder for search screen
-    Two(), // Placeholder for Route screen
-    Third(), // Placeholder for Flow screen
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize _screens using widget.latitude and widget.longitude
+    _screens = [
+      MapScreen(
+          destination: LatLng(widget.latitude ?? 0.0,
+              widget.longitude ?? 0.0)), // Displaying the map screen here
+      const One(), // Placeholder for search screen
+      const Two(), // Placeholder for Route screen
+      const Third(), // Placeholder for Flow screen
+    ];
+  }
 
   // Update the index when a BottomNavigationBar item is tapped
   void _onItemTapped(int index) {

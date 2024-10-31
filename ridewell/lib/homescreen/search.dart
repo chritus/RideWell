@@ -123,7 +123,9 @@ class _OneState extends State<One> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => Home(destinationLat, destinationLon),
+                        builder: (context) => Home(
+                            latitude: destinationLat,
+                            longitude: destinationLon),
                       ),
                     );
                   } else {
