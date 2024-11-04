@@ -76,9 +76,9 @@ class _HomeState extends State<Home> {
 // Separate MapScreen widget to display the map as the Home screen
 
 class MapScreen extends StatefulWidget {
-  final LatLng destination; // Pass destination from search screen
+  final LatLng? destination; // Make destination nullable
 
-  const MapScreen({super.key, required this.destination});
+  const MapScreen({super.key, this.destination});
 
   @override
   _MapScreenState createState() => _MapScreenState();
@@ -87,6 +87,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   List<LatLng> routePoints = [];
   LatLng? start;
+  bool isDestinationSet = false;
 
   @override
   void initState() {
@@ -96,28 +97,32 @@ class _MapScreenState extends State<MapScreen> {
 
   // Fetch the user's current location
   Future<void> getCurrentLocation() async {
-    Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high);
+    Position position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
     setState(() {
       start = LatLng(position.latitude, position.longitude);
     });
-    if (start != null) {
-      getRoute(); // Fetch the route once we have the current location
+    if (start != null && widget.destination != null) {
+      await getRoute(); // Fetch the route once we have the current location and a destination
     }
   }
 
   // Fetch route from ORS and update state
   Future<void> getRoute() async {
-    if (start != null) {
+    if (start != null && widget.destination != null) {
       final points = await fetchRoute(
         start!.latitude,
         start!.longitude,
-        widget.destination.latitude,
-        widget.destination.longitude,
+        widget.destination!.latitude,
+        widget.destination!.longitude,
       );
+
       setState(() {
         routePoints = points;
+        isDestinationSet = true; // Mark the destination as set after fetching the route
       });
+
+      // Print statements to confirm route fetching
+      print("Route points fetched: $routePoints"); // Check if route points are received
     }
   }
 
@@ -131,10 +136,11 @@ class _MapScreenState extends State<MapScreen> {
           point: start!,
           child: Icon(Icons.location_on, color: Colors.red, size: 40),
         ),
+        
       Marker(
         width: 80.0,
         height: 80.0,
-        point: widget.destination,
+        point: widget.destination!,
         child: Icon(Icons.location_on, color: Colors.blue, size: 40),
       ),
     ];
@@ -144,7 +150,7 @@ class _MapScreenState extends State<MapScreen> {
         FlutterMap(
           options: MapOptions(
             initialZoom: 12,
-            initialCenter: start ?? widget.destination,
+            initialCenter: start!, // Center on user's location initially
           ),
           children: [
             TileLayer(
