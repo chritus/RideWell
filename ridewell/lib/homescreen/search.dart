@@ -119,13 +119,17 @@ class _OneState extends State<One> {
                     final destinationLat = locationCoordinates!['latitude'];
                     final destinationLon = locationCoordinates!['longitude'];
 
+                    // Combine latitude and longitude into a single string
+                    final LatLng destinationCoordinates =
+                        LatLng(destinationLon, destinationLat);
+
                     // Navigate to MapScreen with the destination coordinates
                     Navigator.push(
                       context,
                       MaterialPageRoute(
                         builder: (context) => Home(
-                            latitude: destinationLat,
-                            longitude: destinationLon),
+                          destination: destinationCoordinates,
+                        ),
                       ),
                     );
                   } else {
@@ -134,7 +138,7 @@ class _OneState extends State<One> {
                 }
               },
             ),
-          ),
+          )
         ],
       ),
     );
