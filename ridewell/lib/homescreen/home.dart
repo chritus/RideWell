@@ -32,8 +32,7 @@ class _HomeState extends State<Home> {
     // Initialize _screens using widget.latitude and widget.longitude
     _screens = [
       MapScreen(
-          destination: widget.destination
-          ), // Displaying the map screen here
+          destination: widget.destination), // Displaying the map screen here
       const One(), // Placeholder for search screen
       const Two(), // Placeholder for Route screen
       const Third(), // Placeholder for Flow screen
@@ -88,10 +87,67 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   List listOfPoints = [];
   List<LatLng> points = [];
+  Future<LatLng> getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Check if location services are enabled
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception("Location services are disabled.");
+    }
+
+    // Check location permissions
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception("Location permissions are permanently denied.");
+      }
+
+      if (permission == LocationPermission.denied) {
+        throw Exception("Location permissions are denied.");
+      }
+    }
+
+    // Fetch the current position
+    Position position = await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+
+    return LatLng(position.latitude, position.longitude);
+  }
+// ... rest of the code remains the same
+  @override
+  void initState() {
+    super.initState();
+    _initializeMap();
+  }
+
+  LatLng? _currentLocation;
+
+  Future<void> _initializeMap() async {
+    try {
+      _currentLocation = await getCurrentLocation();
+      setState(() {}); // Rebuild the widget with the user's location
+    } catch (e) {
+      print("Error fetching location: $e");
+    }
+  }
+
 // a function to consume the api
   getCoordinates() async {
+    if (_currentLocation == null) {
+      print("Current location not available yet.");
+      return;
+    }
+
+    final startCoordinates =
+        "${_currentLocation!.longitude},${_currentLocation!.latitude}";
+    final destinationCoordinates = "0.000000,5.666667"; // Example destination
+
     var response =
-        await http.get(getRouteUrl("-0.186964,5.603717", "0.000000, 5.666667"));
+        await http.get(getRouteUrl(startCoordinates, destinationCoordinates));
     setState(() {
       if (response.statusCode == 200) {
         var data = jsonDecode(response.body);
@@ -122,22 +178,40 @@ class _MapScreenState extends State<MapScreen> {
     return Stack(children: [
       FlutterMap(
         options: MapOptions(
+          initialCenter: _currentLocation ??
+              LatLng(5.603717, -0.186964), // Default if location isn't fetched
           initialZoom: 12,
-          initialCenter: LatLng(
-              5.603717, -0.186964), // Center on user's location initially
         ),
         children: [
           TileLayer(
             urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
           ),
-          MarkerLayer(markers: markers),
-          PolylineLayer(polylines: [
-            Polyline(
-              points: points,
-              color: Colors.red,
-              strokeWidth: 5,
-            )
-          ])
+          MarkerLayer(
+            markers: [
+              if (_currentLocation != null)
+                Marker(
+                  width: 80.0,
+                  height: 80.0,
+                  point: _currentLocation!,
+                  child: Icon(Icons.my_location, color: Colors.green, size: 40),
+                ),
+              Marker(
+                width: 80.0,
+                height: 80.0,
+                point: LatLng(5.666667, 0.000000),
+                child: Icon(Icons.location_on, color: Colors.blue, size: 40),
+              ),
+            ],
+          ),
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: points,
+                color: Colors.red,
+                strokeWidth: 5,
+              ),
+            ],
+          ),
         ],
       ),
       Positioned(
